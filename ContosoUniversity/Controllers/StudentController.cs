@@ -8,6 +8,7 @@ using System.Web;
 using System.Web.Mvc;
 using ContosoUniversity.DAL;
 using ContosoUniversity.Models;
+using PagedList;
 
 namespace ContosoUniversity.Controllers
 {
@@ -20,13 +21,26 @@ namespace ContosoUniversity.Controllers
          *The sort order param is checked for null or empty and NameSortParam  "name_desc" if so and empty if not 
          * Similar case with the DateSortParm
          * anonymous var students is created which is reference to the student relation 
+         * we then check to see if anything has been entered in the search bar
          * Then we switch on the sort order to determine how to order the students
          * 
          */
-        public ActionResult Index(string sortOrder, string searchString)
+        public ActionResult Index(string sortOrder, string currentFilter, string searchString, int? page)
         {
+            ViewBag.CurrentSort = sortOrder;
             ViewBag.NameSortParm = String.IsNullOrEmpty(sortOrder) ? "name_desc" : "";
             ViewBag.DateSortParm = sortOrder == "Date" ? "date_desc" : "Date";
+            
+            if (searchString != null)
+            {
+                page = 1;
+            }
+            else
+            {
+                searchString = currentFilter;
+            }
+            
+            ViewBag.CurrentFilter = searchString;
             // a reference into the students relation
             var students = from s in db.Students
                            select s;
@@ -51,7 +65,10 @@ namespace ContosoUniversity.Controllers
                     students = students.OrderBy(s => s.LastName);
                     break;
             }
-            return View(students.ToList());
+            int pageSize = 3;
+            //if page is null then set pagenumber to 1
+            int pageNumber = (page ?? 1);
+            return View(students.ToPagedList(pageNumber, pageSize));
         }
 
         // GET: Student/Details/5
